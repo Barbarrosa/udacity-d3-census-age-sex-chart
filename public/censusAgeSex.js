@@ -245,16 +245,20 @@
                     .selectAll('td')
                         .data((d) => d.values)
                         .enter().append('td')
-                            .attr('class', (d) => 'year-' + d + (d == selectedYear ? ' selected' : ''))
+                            .attr('class', (d,i) => 
+                                ('year-' + d + (d == selectedYear ? ' selected' : ''))
+                                + ((((d - (d % 10))/10) % 2 > 0) ? ' alt' : '')
+                            )
                             .text((d) => d)
                             .on('click', (d) => selectYear(d, yearData));
     }
 
-    var svgHeight = 1200;
-        svgWidth = 1200;
-        marginX = 200;
-        marginY = 100;
-        height = svgHeight - marginY,
+    var svgHeight = 1200,
+        svgWidth = 1200,
+        marginX = 75,
+        marginTop = 5,
+        marginBottom = 100,
+        height = svgHeight - (marginTop + marginBottom),
         width = svgWidth - marginX;
 
     function initChart(){
@@ -264,12 +268,12 @@
 
         var chart = svg.append('g')
             .classed('graph', true)
-            .attr('transform', 'translate(' + marginX/2 + ',' + marginY/2 + ')');
+            .attr('transform', 'translate(' + marginX/2 + ',' + marginTop + ')');
 
         svg.append('g')
             .classed('x-axis', true)
             .classed('axis', true)
-            .attr('transform', 'translate(' + marginX/2 + ',' + (height + marginY/2) + ')')
+            .attr('transform', 'translate(' + marginX/2 + ',' + (height + marginTop) + ')')
             .append('text')
                 .classed('axis-label', true)
                 .attr('x', width/2.2)
@@ -277,7 +281,7 @@
                 .text('Population');
 
         svg.append('g')
-            .attr('transform', 'translate(' + marginX/2 + ',' + marginY/2 + ')')
+            .attr('transform', 'translate(' + marginX/2 + ',' + marginTop + ')')
             .classed('y-axis', true)
             .classed('axis', true)
             .append('text')
@@ -351,7 +355,9 @@
 
         bars.select('title')
             .text((d) => 
-                "Age: " + d.age
+                "Born: " + (d.age.indexOf('+') === -1 ? '' : 'Before or at ' )
+                    + (d.year - parseInt(d.age.replace(/\D/g,'')))
+                + "\nAge: " + d.age
                 + "\nTotal: " + popFormat(d.total)
                 + "\nMale: " + popFormat(d.male)
                 + "\nFemale: " + popFormat(d.female)

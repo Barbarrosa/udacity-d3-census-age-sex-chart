@@ -48,17 +48,18 @@
                 stroke-width: 0;
             }
             .yearSelector {
+                float:right;
                 border:none;
                 border-collapse:collapse;
             }
-            .yearSelector tr {
+            .yearSelector tr td {
                 background-color:#e0f3db;
+            }
+            .yearSelector tr td.alt {
+                background-color:#fff;
             }
             .yearSelector tr td {
                 padding:7px;
-            }
-            .yearSelector tr:first-child {
-                background-color:#a8ddb5;
             }
             .yearSelector td:hover {
                 background-color:#43a2ca;
@@ -67,11 +68,15 @@
             .yearSelector tr td.selected {
                 background-color:#43a2ca;
             }
+            #playButton {
+                margin: 0 0 0 10px;
+                padding:5px 10px;
+            }
         </style>
     </head>
     <body>
         <p>
-            <button id="playButton">Play</button>
+            <button id="playButton">Play from 1900</button>
         </p>
         <table class="yearSelector">
             <tbody>
