@@ -1,6 +1,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <title>U.S. Census Population Estimates, 1900 - 2000</title>
         <script src="./bower_components/d3/d3.min.js"></script>
         <script src="./bower_components/jszip/dist/jszip.min.js"></script>
         <script src="./bower_components/jszip-utils/dist/jszip-utils.min.js"></script>
@@ -72,9 +73,15 @@
                 margin: 0 0 0 10px;
                 padding:5px 10px;
             }
+            .csl-bib-body {
+                line-height:1.35;
+                padding-left: 2em;
+                text-indent:-2em;
+            }
         </style>
     </head>
     <body>
+        <h1>U.S. Census Population Estimates, 1900 - 2000</h1>
         <p>
             <button id="playButton">Play from 1900</button>
         </p>
@@ -84,6 +91,12 @@
         </table>
         <svg class="chart mainChart">
         </svg>
+        <div class="csl-bib-body">
+            <div class="csl-entry">"National Intercensal Estimates (1990-2000)" <i>Census.gov</i>. Accessed April 15, 2016. https://www.census.gov/popest/data/intercensal/national/index.html.</div>
+            <div class="csl-entry">"Quarterly Population Estimates, 1980 to 1990" <i>Census.gov</i>. Accessed April 15, 2016. https://www.census.gov/popest/data/national/asrh/1980s/80s_nat_detail.html.</div>
+            <div class="csl-entry">"National Estimates by Age, Sex, Race: 1900-1979 (PE-11)" <i>Census.gov</i>. Accessed April 15, 2016. https://www.census.gov/popest/data/national/asrh/pre-1980/PE-11.html.</div>
+            <div class="csl-entry">"A Century of Population Change in the Age and Sex Composition of the Nation" <i>Census.gov</i>. Accessed April 14, 2016. https://www.census.gov/dataviz/visualizations/055/.</div>
+        </div>
         <script src="./censusAgeSex.js"></script>
     </body>
 </html>
