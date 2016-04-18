@@ -8,6 +8,9 @@
             .axis text {
                 font: 10px sans-serif;
             }
+            .axis text.axis-label {
+                font: 13px sans-serif;
+            }
             .axis path,
             .axis line {
                 fill: none;
@@ -20,15 +23,55 @@
                 shape-rendering: crispEdges;
             }
             svg.chart rect.male {
-                fill: rgba(155, 172, 188, 1);
+                fill: rgba(253,192,134, 0.5);
             }
             svg.chart rect.female {
-                fill: rgba(240, 189, 107, 0.5);
+                fill: rgba(190,174,212, 0.5);
+            }
+            svg.chart rect.total {
+                fill: rgba(127,201,127, 0.5);
+            }
+            svg.chart .bar:hover rect.male {
+                fill: rgba(253,192,134, 1);
+            }
+            svg.chart .bar:hover rect.female {
+                fill: rgba(190,174,212, 1);
+            }
+            svg.chart .bar:hover rect.total {
+                fill: rgba(127,201,127, 1);
+            }
+            svg.chart .grid .tick {
+                stroke: #fff;
+                shape-rendering: crispEdges;
+            }
+            svg.chart .grid path {
+                stroke-width: 0;
+            }
+            .yearSelector {
+                border:none;
+                border-collapse:collapse;
+            }
+            .yearSelector tr {
+                background-color:#e0f3db;
+            }
+            .yearSelector tr td {
+                padding:7px;
+            }
+            .yearSelector tr:first-child {
+                background-color:#a8ddb5;
+            }
+            .yearSelector td:hover {
+                background-color:#43a2ca;
+                cursor:pointer;
             }
         </style>
     </head>
     <body>
-        <svg class="chart">
+        <table class="yearSelector">
+            <tbody>
+            </tbody>
+        </table>
+        <svg class="chart mainChart">
         </svg>
         <script src="./censusAgeSex.js"></script>
     </body>

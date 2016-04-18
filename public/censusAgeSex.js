@@ -24,22 +24,21 @@
                             dataLoaded(err);
                             return;
                         }
-                        yearData[year] = d3.csv.parse(
-                            response.responseText.split("\n").reduce(
-                                function(initial, line){
-                                    // Filter for lines that contain data
-                                    if(line.length > 0 && /^\d+\+?,/.test(line)) {
-                                        return initial + "\n" + line;
-                                    } else {
-                                        return initial;
-                                    }
-                                },
-                                // Update headers to a usable format
-                                'age,total,male,female,'
-                                + 'white_total,white_male,white_female,'
-                                + 'nonwhite_total,nonwhite_male,nonwhite_female'
-                            )
+                        var filteredCsvString = response.responseText.split("\n").reduce(
+                            function(initial, line){
+                                // Filter for lines that contain data
+                                if(line.length > 0 && /^\d+\+?,/.test(line)) {
+                                    return initial + "\n" + line;
+                                } else {
+                                    return initial;
+                                }
+                            },
+                            // Update headers to a usable format
+                            'age,total,male,female,'
+                            + 'white_total,white_male,white_female,'
+                            + 'nonwhite_total,nonwhite_male,nonwhite_female'
                         );
+                        yearData[year] = d3.csv.parse(filteredCsvString);
                         dataLoaded();
                     });
                 });
@@ -132,20 +131,20 @@
     }
 
     function normalizeData(yearData) {
-        var normalizedYearData = [];
+        var normalizedYearData = {};
         for(var key of Object.keys(yearData)) {
             var newYearRows = {};
             var year = yearData[key];
             for(var row of year) {
-                if(/\D/.test(row.age) || row.age == '999' || row.age.length === 0) {
+                if(/\D/.test(row.age.trim()) || row.age == '999' || row.age.length === 0) {
                     // Skip non-numeric ages, the special "999" age value, and empty records
                     continue;
                 }
 
                 row.age = parseInt(row.age);
-                row.total = parseInt(row.total);
-                row.male = parseInt(row.male);
-                row.female = parseInt(row.female);
+                row.total = parseInt(row.total.replace(/,/g,''));
+                row.male = parseInt(row.male.replace(/,/g,''));
+                row.female = parseInt(row.female.replace(/,/g,''));
 
                 if(row.age in newYearRows) {
                     var existingRowData = newYearRows[row.age];
@@ -154,9 +153,9 @@
                         console.error('Found unexpected data for year.', key, row, existingRowData);
                     } else {
                         // Take the average if the data has multiple measurements across the year
-                        existingRowData.row.total = ((existingRowData.row.total * existingRowData.count) + row.total)/(existingRowData.count + 1);
-                        existingRowData.row.male = ((existingRowData.row.male * existingRowData.count) + row.male)/(existingRowData.count + 1);
-                        existingRowData.row.female = ((existingRowData.row.female * existingRowData.count) + row.female)/(existingRowData.count + 1);
+                        existingRowData.row.total = parseInt(((existingRowData.row.total * existingRowData.count) + row.total)/(existingRowData.count + 1));
+                        existingRowData.row.male = parseInt(((existingRowData.row.male * existingRowData.count) + row.male)/(existingRowData.count + 1));
+                        existingRowData.row.female = parseInt(((existingRowData.row.female * existingRowData.count) + row.female)/(existingRowData.count + 1));
                         existingRowData.dates.push(row.date || ((row.month && row.year) ? (row.month + '-' + row.year) : null));
                         existingRowData.rowsUsed.push(row);
                     }
@@ -189,82 +188,142 @@
                 }
             }
 
+            normalizedYearData[key] = [];
             for(var age of Object.keys(newYearRows)) {
                 rowData = newYearRows[age];
-                normalizedYearData.push(rowData.row);
+                normalizedYearData[key].push(rowData.row);
             }
         }
         return normalizedYearData;
     }
 
     fetchCensusData()
-        .then((yearData) => draw(normalizeData(yearData)))
+        .then((yearData) => drawYears(normalizeData(yearData)))
         .catch((err) => console.log(err));
 
+    function drawYears(yearData) {
+        var years = Object.keys(yearData).sort((a,b) => a - b);
+        drawYearScale(years, yearData);
+        // Draw first year
+        draw(yearData[years[0]]);
+    }
+
+    function drawYearScale(years, yearData) {
+        var nestedYears = d3.nest()
+            .key((d) => ('' + d).substring(3,4))
+            .sortKeys(d3.ascending)
+            .entries(years);
+
+        d3.select('.yearSelector tbody')
+            .selectAll('tr')
+                .data(nestedYears)
+                .enter().append('tr')
+                    .selectAll('td')
+                        .data((d) => d.values)
+                        .enter().append('td')
+                            .text((d) => d)
+                            .on('click', (d) => draw(yearData[d]));
+    }
+
     function draw(rows) {
-        var svgHeight = 500;
+        var svgHeight = 1200;
             svgWidth = 1200;
             marginX = 200;
             marginY = 70;
             height = svgHeight - marginX,
             width = svgWidth - marginY;
 
-        var y = d3.scale.linear()
-            .domain([d3.min(rows, (d) => Math.min(d.male,d.female)), d3.max(rows, (d) => Math.max(d.male,d.female))])
-            .range([height,0]);
+        var x = d3.scale.linear()
+            // .domain([d3.min(rows, (d) => Math.min(d.male,d.female)), d3.max(rows, (d) => Math.max(d.male,d.female))])
+            .domain([0, d3.max(rows, (d) => Math.max(d.total, d.male, d.female))])
+            .range([0,width]);
 
-        var x = d3.scale.ordinal()
+        var y = d3.scale.ordinal()
             .domain(d3.set(rows.map((r) => r.age).sort((v,v2) => v - v2)).values())
-            .rangeBands([0,width], .05);
+            .rangeBands([height,0], .2);
 
-        var barWidth = x.rangeBand();
+        var barWidth = y.rangeBand();
 
-        var svg = d3.select('svg');
+        var svg = d3.select('svg.mainChart');
+        svg.html('');
         svg.attr('height', svgHeight)
            .attr('width', svgWidth);
         var chart = svg.append('g')
             .attr('transform', 'translate(' + marginX/2 + ',' + marginY/2 + ')');
 
-        chart.selectAll('rect.male')
-            .data(rows)
-            .enter().append('rect')
-                .classed('male', true)
-                .attr('width', barWidth)
-                .attr('height', (d) => height - y(+d.male))
-                .attr('x', (d) => x(+d.age))
-                .attr('y', (d) => y(+d.male));
+        var bars = chart.selectAll('g.bar')
+            .data(rows, (d) => d.age)
+            .enter().append('g')
+                .classed('bar', true);
 
-        chart.selectAll('rect.female')
-            .data(rows)
-            .enter().append('rect')
-                .classed('female', true)
-                .attr('width', barWidth)
-                .attr('height', (d) => height - y(+d.female))
-                .attr('x', (d) => x(+d.age))
-                .attr('y', (d) => y(+d.female));
+        var popFormat = d3.format('0,000');
+        bars.append('title')
+            .text((d) => 
+                "Age: " + d.age
+                + "\nTotal: " + popFormat(d.total)
+                + "\nMale: " + popFormat(d.male)
+                + "\nFemale: " + popFormat(d.female)
+                );
+                
+        bars.append('rect')
+            .classed('total', true)
+            .attr('height', barWidth)
+            .attr('width', (d) => x(+d.total))
+            .attr('y', (d) => y(+d.age));
+
+        bars.append('rect')
+            .classed('male', true)
+            .attr('height', barWidth/2)
+            .attr('width', (d) => x(+d.male))
+            .attr('y', (d) => y(+d.age));
+
+        bars.append('rect')
+            .classed('female', true)
+            .attr('height', barWidth/2)
+            .attr('width', (d) => x(+d.female))
+            .attr('y', (d) => y(+d.age) + barWidth/2);
 
         var xAxis = d3.svg.axis()
             .orient('bottom')
-            .tickFormat(d3.format('.0'))
+            .tickFormat(d3.format('.2s'))
             .scale(x);
         var yAxis = d3.svg.axis()
             .orient('left')
-            .tickFormat(d3.format('.2s'))
+            .tickFormat(d3.format('.0'))
             .scale(y);
 
         svg.append('g')
             .attr('transform', 'translate(' + marginX/2 + ',' + (height + marginY/2) + ')')
-            .call(xAxis);
+            .call(xAxis)
+                .classed('axis', true)
+                .append('text')
+                    .classed('axis-label', true)
+                    .attr('x', width/2.2)
+                    .attr('dy', '3em')
+                    .text('Population');
 
         svg.append('g')
             .attr('transform', 'translate(' + marginX/2 + ',' + marginY/2 + ')')
             .call(yAxis)
-                .attr('class', 'axis')
+                .classed('axis', true)
                 .append('text')
+                    .classed('axis-label', true)
                     .attr('transform', 'rotate(-90)')
-                    .attr('y', width/50)
-                    .attr('x', -height/2.7)
-                    .text('population (in millions)');
+                    .attr('x', -height/1.6)
+                    .attr('dy', '-3em')
+                    .text('Age (years)');
+        
+        chart.append('g')
+            .classed('grid', true)
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(
+                d3.svg.axis()
+                    .scale(x)
+                    .orient('bottom')
+                    .ticks(9)
+                    .tickSize(-width, 0, 0)
+                    .tickFormat('')
+                );
 
     };
 }());
