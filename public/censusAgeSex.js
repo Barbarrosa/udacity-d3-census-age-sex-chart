@@ -203,12 +203,12 @@
 
     function drawYears(yearData) {
         var years = Object.keys(yearData).sort((a,b) => a - b);
-        drawYearScale(years, yearData);
+        drawYearScale(years[0], years, yearData);
         // Draw first year
         draw(yearData[years[0]]);
     }
 
-    function drawYearScale(years, yearData) {
+    function drawYearScale(selectedYear, years, yearData) {
         var nestedYears = d3.nest()
             .key((d) => ('' + d).substring(3,4))
             .sortKeys(d3.ascending)
@@ -221,8 +221,15 @@
                     .selectAll('td')
                         .data((d) => d.values)
                         .enter().append('td')
+                            .attr('class', (d) => 'year-' + d + (d == selectedYear ? ' selected' : ''))
                             .text((d) => d)
-                            .on('click', (d) => draw(yearData[d]));
+                            .on('click', (d) => {
+                                d3.select('.yearSelector td.selected')
+                                    .classed('selected', false);
+                                d3.select('.yearSelector td.year-' + d)
+                                    .classed('selected', true);
+                                draw(yearData[d]);
+                            });
     }
 
     function draw(rows) {
