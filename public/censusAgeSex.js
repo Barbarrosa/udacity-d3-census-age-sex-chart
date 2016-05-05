@@ -207,37 +207,52 @@
         .then((yearData) => drawYears(normalizeData(yearData)))
         .catch((err) => console.log(err));
 
+    function getMaxPopulation(years) {
+        var maxPop = 0;
+        for(var k of Object.keys(years)) {
+            maxPop = Math.max(maxPop, d3.max(years[k], (d) => d.total));
+        }
+        return maxPop;
+    }
+
+
     function drawYears(yearData) {
         var years = Object.keys(yearData).sort((a,b) => a - b);
-        drawYearScale(years[0], years, yearData);
+
+        // Keep the population scale consistent by using the overall max population
+        // across all years
+        var maxPop = getMaxPopulation(yearData);
+
+        drawYearScale(years[0], years, yearData, maxPop);
+
         // Draw first year
-        draw(yearData[years[0]]);
+        draw(yearData[years[0]], maxPop);
     }
 
-    function playYears(yearsLeft, yearData) {
-        selectYear(yearsLeft[0], yearData);
-        setTimeout(() => playYears(yearsLeft.slice(1), yearData), 400);
+    function playYears(yearsLeft, yearData, maxPop) {
+        selectYear(yearsLeft[0], yearData, maxPop);
+        setTimeout(() => playYears(yearsLeft.slice(1), yearData, maxPop), 400);
     }
 
-    function selectYear(year, yearData) {
+    function selectYear(year, yearData, maxPop) {
         var nextYear = d3.select('.yearSelector td.year-' + year);
         if(nextYear.size() > 0) {
             d3.select('.yearSelector td.selected')
                 .classed('selected', false);
             nextYear
                 .classed('selected', true);
-            draw(yearData[year]);
+            draw(yearData[year], maxPop);
         }
     }
 
-    function drawYearScale(selectedYear, years, yearData) {
+    function drawYearScale(selectedYear, years, yearData, maxPop) {
         var nestedYears = d3.nest()
             .key((d) => ('' + d).substring(3,4))
             .sortKeys(d3.ascending)
             .entries(years);
 
         d3.select('#playButton')
-            .on('click', (d) => playYears(years, yearData));
+            .on('click', (d) => playYears(years, yearData, maxPop));
         d3.select('.yearSelector tbody')
             .selectAll('tr')
                 .data(nestedYears)
@@ -250,7 +265,7 @@
                                 + ((((d - (d % 10))/10) % 2 > 0) ? ' alt' : '')
                             )
                             .text((d) => d)
-                            .on('click', (d) => selectYear(d, yearData));
+                            .on('click', (d) => selectYear(d, yearData, maxPop));
     }
 
     var svgHeight = 1200,
@@ -298,10 +313,10 @@
 
     initChart();
 
-    function draw(rows) {
+    function draw(rows, maxPop) {
 
         var x = d3.scale.linear()
-            .domain([0, d3.max(rows, (d) => Math.max(d.total, d.male, d.female))])
+            .domain([0, maxPop])
             .range([0,width]);
 
         var y = d3.scale.ordinal()
