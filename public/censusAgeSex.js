@@ -285,8 +285,6 @@
             .append('clipPath')
                 .attr('id', 'graph-clip-path')
                 .append('rect')
-                    .attr('x', marginX/2)
-                    .attr('y', marginTop)
                     .attr('width', width)
                     .attr('height', height - 5);
 
@@ -325,6 +323,7 @@
 
     function draw(rows, year, maxPop) {
 
+        var transitionDuration = 500;
         var x = d3.scale.linear()
             .domain([0, maxPop])
             .range([0,width]);
@@ -350,21 +349,21 @@
 
         var exitBars = bars.exit();
 
-        var barHeight = (y(0) - y(1));
         exitBars
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .ease('sin-in-out')
             .selectAll('rect')
             .attr('y', (d) => {
                 var newAge = parseInt(d.age.replace(/\D/g,'')) + (year - d.year);
                 if(newAge <= 0)
                 {
-                    return y(0) + (-newAge * barHeight);
+                    return y(0) + (-newAge * barWidth);
                 } else {
-                    return y(maxAge) - ((newAge - maxAgeNumber) * barHeight);
+                    return y(maxAge) - ((newAge - maxAgeNumber) * barWidth);
                 }
-            });
+            })
+            .attr('width', 0);
 
         var popFormat = d3.format('0,000');
         enterBars.append('title');
@@ -372,27 +371,27 @@
         enterBars.append('rect')
             .classed('total', true)
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .attr('width', (d) => x(+d.total))
             .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
             .classed('male', true)
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .attr('width', (d) => x(+d.male))
             .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
             .classed('female', true)
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .attr('width', (d) => x(+d.female))
             .attr('y', (d) => y(d.age));
 
         var updateBars = bars
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .ease('sin-in-out');
 
         bars.select('title')
@@ -430,19 +429,19 @@
 
         svg.select('g.x-axis')
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .ease('sin-in-out')
             .call(xAxis)
 
         svg.select('g.y-axis')
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .ease('sin-in-out')
             .call(yAxis);
         
         chart.select('g.grid')
             .transition()
-            .duration(1000)
+            .duration(transitionDuration)
             .ease('sin-in-out')
             .call(
                 d3.svg.axis()
