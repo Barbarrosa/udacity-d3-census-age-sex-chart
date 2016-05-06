@@ -3,6 +3,7 @@
         <meta charset="utf-8">
         <title>U.S. Census Population Estimates, 1900 - 2000</title>
         <script src="./bower_components/d3/d3.min.js"></script>
+        <script src="./bower_components/d3-legend/d3-legend.min.js"></script>
         <script src="./bower_components/jszip/dist/jszip.min.js"></script>
         <script src="./bower_components/jszip-utils/dist/jszip-utils.min.js"></script>
         <style>
@@ -23,23 +24,11 @@
                 stroke: #000;
                 shape-rendering: crispEdges;
             }
-            svg.chart rect.male {
-                fill: rgba(253,192,134, 0.5);
+            svg.chart .bar {
+                opacity: 0.5;
             }
-            svg.chart rect.female {
-                fill: rgba(190,174,212, 0.5);
-            }
-            svg.chart rect.total {
-                fill: rgba(127,201,127, 0.5);
-            }
-            svg.chart .bar:hover rect.male {
-                fill: rgba(253,192,134, 1);
-            }
-            svg.chart .bar:hover rect.female {
-                fill: rgba(190,174,212, 1);
-            }
-            svg.chart .bar:hover rect.total {
-                fill: rgba(127,201,127, 1);
+            svg.chart .bar:hover {
+                opacity: 1;
             }
             svg.chart .grid .tick {
                 stroke: #fff;

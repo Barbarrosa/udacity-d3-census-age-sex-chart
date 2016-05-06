@@ -341,6 +341,18 @@
         var svg = d3.select('svg.mainChart');
         var chart = svg.select('g.graph');
 
+        var popTypeScale = d3.scale.category10()
+            .domain(['Total','Female','Male']);
+
+
+        if(d3.select('.legend').size() < 1) {
+            var colorLegend = d3.legend.color();
+            colorLegend.scale(popTypeScale);
+            var legendElement = svg.append('g').classed('legend', true);
+            legendElement.call(colorLegend);
+            legendElement.attr('transform', 'translate(' + (x(maxPop) - legendElement.attr('width') * 3) + ',0)');
+        }
+
         var bars = chart.selectAll('g.bar')
             .data(rows, (d) => (d.year - parseInt(d.age.replace(/\D/g,''))));
 
@@ -370,6 +382,7 @@
 
         enterBars.append('rect')
             .classed('total', true)
+            .attr('fill', popTypeScale('Total'))
             .transition()
             .duration(transitionDuration)
             .attr('width', (d) => x(+d.total))
@@ -377,6 +390,7 @@
 
         enterBars.append('rect')
             .classed('male', true)
+            .attr('fill', popTypeScale('Male'))
             .transition()
             .duration(transitionDuration)
             .attr('width', (d) => x(+d.male))
@@ -384,6 +398,7 @@
 
         enterBars.append('rect')
             .classed('female', true)
+            .attr('fill', popTypeScale('Female'))
             .transition()
             .duration(transitionDuration)
             .attr('width', (d) => x(+d.female))
