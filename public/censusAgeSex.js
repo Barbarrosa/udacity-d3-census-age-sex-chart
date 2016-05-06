@@ -226,7 +226,7 @@
         drawYearScale(years[0], years, yearData, maxPop);
 
         // Draw first year
-        draw(yearData[years[0]], maxPop);
+        draw(yearData[years[0]], years[0], maxPop);
     }
 
     function playYears(yearsLeft, yearData, maxPop) {
@@ -241,7 +241,7 @@
                 .classed('selected', false);
             nextYear
                 .classed('selected', true);
-            draw(yearData[year], maxPop);
+            draw(yearData[year], year, maxPop);
         }
     }
 
@@ -281,9 +281,19 @@
         svg.attr('height', svgHeight)
            .attr('width', svgWidth);
 
+        svg.append('defs')
+            .append('clipPath')
+                .attr('id', 'graph-clip-path')
+                .append('rect')
+                    .attr('x', marginX/2)
+                    .attr('y', marginTop)
+                    .attr('width', width)
+                    .attr('height', height - 5);
+
         var chart = svg.append('g')
             .classed('graph', true)
-            .attr('transform', 'translate(' + marginX/2 + ',' + marginTop + ')');
+            .attr('transform', 'translate(' + marginX/2 + ',' + marginTop + ')')
+            .attr('clip-path', 'url(#graph-clip-path)');
 
         svg.append('g')
             .classed('x-axis', true)
@@ -313,14 +323,18 @@
 
     initChart();
 
-    function draw(rows, maxPop) {
+    function draw(rows, year, maxPop) {
 
         var x = d3.scale.linear()
             .domain([0, maxPop])
             .range([0,width]);
 
+        var ageRange = d3.set(rows.map((r) => r.age).sort(d3.descending)).values();
+        var maxAge = ageRange[ageRange.length - 1];
+        var maxAgeNumber = parseInt(maxAge.replace(/\D/g,''));
+        var minBirthYear = year - maxAgeNumber;
         var y = d3.scale.ordinal()
-            .domain(d3.set(rows.map((r) => r.age).sort(d3.descending)).values())
+            .domain(ageRange)
             .rangeBands([height,0], .2);
 
         var barWidth = y.rangeBand();
@@ -329,39 +343,52 @@
         var chart = svg.select('g.graph');
 
         var bars = chart.selectAll('g.bar')
-            .data(rows, (d) => d.age);
+            .data(rows, (d) => (d.year - parseInt(d.age.replace(/\D/g,''))));
 
         var enterBars = bars.enter().append('g')
             .classed('bar', true);
 
-        bars.exit()
+        var exitBars = bars.exit();
+
+        var barHeight = (y(0) - y(1));
+        exitBars
             .transition()
             .duration(1000)
             .ease('sin-in-out')
             .selectAll('rect')
-            .attr('height',0)
-            .attr('y',0);
+            .attr('y', (d) => {
+                var newAge = parseInt(d.age.replace(/\D/g,'')) + (year - d.year);
+                if(newAge <= 0)
+                {
+                    return y(0) + (-newAge * barHeight);
+                } else {
+                    return y(maxAge) - ((newAge - maxAgeNumber) * barHeight);
+                }
+            });
 
         var popFormat = d3.format('0,000');
         enterBars.append('title');
 
         enterBars.append('rect')
             .classed('total', true)
-            .attr('height', 0)
-            .attr('width', 0)
-            .attr('y', 0);
+            .transition()
+            .duration(1000)
+            .attr('width', (d) => x(+d.total))
+            .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
             .classed('male', true)
-            .attr('height', 0)
-            .attr('width', 0)
-            .attr('y', 0);
+            .transition()
+            .duration(1000)
+            .attr('width', (d) => x(+d.male))
+            .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
             .classed('female', true)
-            .attr('height', 0)
-            .attr('width', 0)
-            .attr('y', 0);
+            .transition()
+            .duration(1000)
+            .attr('width', (d) => x(+d.female))
+            .attr('y', (d) => y(d.age));
 
         var updateBars = bars
             .transition()
