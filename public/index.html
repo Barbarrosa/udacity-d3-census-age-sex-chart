@@ -24,10 +24,19 @@
                 stroke: #000;
                 shape-rendering: crispEdges;
             }
-            svg.chart .bar {
+            svg.chart .bar rect {
                 opacity: 0.5;
             }
-            svg.chart .bar:hover {
+            svg.chart .bar:hover rect {
+                opacity: 1;
+            }
+            svg.chart.Total .bar rect.Total {
+                opacity: 1;
+            }
+            svg.chart.Male .bar rect.Male {
+                opacity: 1;
+            }
+            svg.chart.Female .bar rect.Female {
                 opacity: 1;
             }
             svg.chart .grid .tick {

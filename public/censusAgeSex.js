@@ -274,7 +274,9 @@
         marginTop = 5,
         marginBottom = 100,
         height = svgHeight - (marginTop + marginBottom),
-        width = svgWidth - marginX;
+        width = svgWidth - marginX
+        popTypeScale = d3.scale.category10()
+            .domain(['Total','Female','Male']);
 
     function initChart(){
         var svg = d3.select('svg.mainChart');
@@ -341,13 +343,12 @@
         var svg = d3.select('svg.mainChart');
         var chart = svg.select('g.graph');
 
-        var popTypeScale = d3.scale.category10()
-            .domain(['Total','Female','Male']);
-
-
         if(d3.select('.legend').size() < 1) {
             var colorLegend = d3.legend.color();
             colorLegend.scale(popTypeScale);
+            colorLegend.on('cellover', (d) => svg.classed(d, true));
+            colorLegend.on('cellout', (d) => svg.classed(d, false));
+
             var legendElement = svg.append('g').classed('legend', true);
             legendElement.call(colorLegend);
             legendElement.attr('transform', 'translate(' + (x(maxPop) - legendElement.attr('width') * 3) + ',0)');
@@ -381,7 +382,7 @@
         enterBars.append('title');
 
         enterBars.append('rect')
-            .classed('total', true)
+            .classed('Total', true)
             .attr('fill', popTypeScale('Total'))
             .transition()
             .duration(transitionDuration)
@@ -389,7 +390,7 @@
             .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
-            .classed('male', true)
+            .classed('Male', true)
             .attr('fill', popTypeScale('Male'))
             .transition()
             .duration(transitionDuration)
@@ -397,7 +398,7 @@
             .attr('y', (d) => y(d.age));
 
         enterBars.append('rect')
-            .classed('female', true)
+            .classed('Female', true)
             .attr('fill', popTypeScale('Female'))
             .transition()
             .duration(transitionDuration)
