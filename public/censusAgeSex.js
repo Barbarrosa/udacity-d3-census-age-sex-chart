@@ -181,7 +181,8 @@
                             age: row.age,
                             total: row.total,
                             male: row.male,
-                            female: row.female
+                            female: row.female,
+                            birthYear: (parseInt(key) - parseInt(row.age.replace(/\D/g,'')))
                         },
                         count: 1
                     };
@@ -223,7 +224,8 @@
         // across all years
         var maxPop = getMaxPopulation(yearData);
 
-        drawYearScale(years[0], years, yearData, maxPop);
+        selectedYear = years[0];
+        drawYearScale(years, yearData, maxPop);
 
         // Draw first year
         draw(yearData[years[0]], years[0], maxPop);
@@ -234,18 +236,19 @@
         setTimeout(() => playYears(yearsLeft.slice(1), yearData, maxPop), 400);
     }
 
-    function selectYear(year, yearData, maxPop) {
+    function selectYear(year, yearData, maxPop, maxTransitionMs) {
         var nextYear = d3.select('.yearSelector td.year-' + year);
         if(nextYear.size() > 0) {
             d3.select('.yearSelector td.selected')
                 .classed('selected', false);
             nextYear
                 .classed('selected', true);
-            draw(yearData[year], year, maxPop);
+            draw(yearData[year], year, maxPop, maxTransitionMs || 500);
+            selectedYear = year;
         }
     }
 
-    function drawYearScale(selectedYear, years, yearData, maxPop) {
+    function drawYearScale(years, yearData, maxPop) {
         var nestedYears = d3.nest()
             .key((d) => ('' + d).substring(3,4))
             .sortKeys(d3.ascending)
@@ -270,13 +273,14 @@
 
     var svgHeight = 1200,
         svgWidth = 1200,
-        marginX = 75,
+        marginX = 175,
         marginTop = 5,
         marginBottom = 100,
         height = svgHeight - (marginTop + marginBottom),
-        width = svgWidth - marginX
+        width = svgWidth - marginX,
         popTypeScale = d3.scale.category10()
-            .domain(['Total','Female','Male']);
+            .domain(['Total','Female','Male']),
+        selectedYear;
 
     function initChart(){
         var svg = d3.select('svg.mainChart');
@@ -323,17 +327,18 @@
 
     initChart();
 
-    function draw(rows, year, maxPop) {
+    function draw(rows, year, maxPop, maxTransitionMs) {
 
-        var transitionDuration = 500;
-        var x = d3.scale.linear()
-            .domain([0, maxPop])
-            .range([0,width]);
+        var transitionDuration = maxTransitionMs;
 
         var ageRange = d3.set(rows.map((r) => r.age).sort(d3.descending)).values();
         var maxAge = ageRange[ageRange.length - 1];
         var maxAgeNumber = parseInt(maxAge.replace(/\D/g,''));
         var minBirthYear = year - maxAgeNumber;
+        var x = d3.scale.linear()
+            .domain([0, maxPop])
+            .range([0,width]);
+
         var y = d3.scale.ordinal()
             .domain(ageRange)
             .rangeBands([height,0], .2);
@@ -345,17 +350,18 @@
 
         if(d3.select('.legend').size() < 1) {
             var colorLegend = d3.legend.color();
+            colorLegend.title('Groups by Gender (hover to highlight)');
             colorLegend.scale(popTypeScale);
             colorLegend.on('cellover', (d) => svg.classed(d, true));
             colorLegend.on('cellout', (d) => svg.classed(d, false));
 
             var legendElement = svg.append('g').classed('legend', true);
             legendElement.call(colorLegend);
-            legendElement.attr('transform', 'translate(' + (x(maxPop) - legendElement.attr('width') * 3) + ',0)');
+            legendElement.attr('transform', 'translate(' + (x(maxPop) - 200) + ',50)');
         }
 
         var bars = chart.selectAll('g.bar')
-            .data(rows, (d) => (d.year - parseInt(d.age.replace(/\D/g,''))));
+            .data(rows, (d) => d.birthYear);
 
         var enterBars = bars.enter().append('g')
             .classed('bar', true);
@@ -369,8 +375,7 @@
             .selectAll('rect')
             .attr('y', (d) => {
                 var newAge = parseInt(d.age.replace(/\D/g,'')) + (year - d.year);
-                if(newAge <= 0)
-                {
+                if(newAge <= 0) {
                     return y(0) + (-newAge * barWidth);
                 } else {
                     return y(maxAge) - ((newAge - maxAgeNumber) * barWidth);
@@ -413,7 +418,7 @@
         bars.select('title')
             .text((d) => 
                 "Born: " + (d.age.indexOf('+') === -1 ? '' : 'Before or at ' )
-                    + (d.year - parseInt(d.age.replace(/\D/g,'')))
+                    + d.birthYear
                 + "\nAge: " + d.age
                 + "\nTotal: " + popFormat(d.total)
                 + "\nMale: " + popFormat(d.male)
@@ -444,29 +449,22 @@
             .scale(y);
 
         svg.select('g.x-axis')
-            .transition()
-            .duration(transitionDuration)
-            .ease('sin-in-out')
             .call(xAxis)
 
         svg.select('g.y-axis')
-            .transition()
-            .duration(transitionDuration)
-            .ease('sin-in-out')
             .call(yAxis);
         
         chart.select('g.grid')
-            .transition()
-            .duration(transitionDuration)
-            .ease('sin-in-out')
             .call(
                 d3.svg.axis()
                     .scale(x)
                     .orient('bottom')
                     .ticks(9)
-                    .tickSize(-width, 0, 0)
+                    .tickSize(-height, 0, 0)
                     .tickFormat('')
-                );
+            ).each(function(){
+                this.parentNode.appendChild(this);
+            });
 
     };
 }());
